@@ -106,6 +106,10 @@ class BaseCsc(salobj.ConfigurableCsc):
         * 0: regular operation.
         * 1: simulation: use a mock low level controller.
 
+    extra_commands : `set` [`str`]
+        List of commands that can be defined in the CSC but be missing
+        from the interface.
+
     Notes
     -----
     **Error Codes**
@@ -147,6 +151,7 @@ class BaseCsc(salobj.ConfigurableCsc):
         initial_state: salobj.State = salobj.State.STANDBY,
         override: str = "",
         simulation_mode: int = 0,
+        extra_commands: set[str] = set(),
     ) -> None:
         if initial_state == salobj.State.OFFLINE:
             raise ValueError("initial_state = OFFLINE is no longer supported")
@@ -186,6 +191,7 @@ class BaseCsc(salobj.ConfigurableCsc):
             initial_state=initial_state,
             override=override,
             simulation_mode=simulation_mode,
+            extra_commands=extra_commands,
         )
 
     @staticmethod
