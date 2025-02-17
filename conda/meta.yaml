@@ -15,7 +15,6 @@ test:
     - ts-conda-build =0.4
     - ts-utils
     - ts-xml
-    - ts-idl {{ idl_version }}
     - ts-salobj {{ salobj_version }}
     - ts-tcpip
   source_files:
@@ -42,6 +41,5 @@ requirements:
     - setuptools
     - setuptools_scm
     - ts-xml
-    - ts-idl {{ idl_version }}
     - ts-salobj {{ salobj_version }}
     - ts-tcpip

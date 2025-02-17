@@ -2,5 +2,4 @@
 DevelopPipeline(
     name: "ts_hexrotcomm",
     module_name: "lsst.ts.hexrotcomm",
-    idl_names: ["MTRotator"]
 )

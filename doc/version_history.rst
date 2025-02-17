@@ -6,6 +6,12 @@
 Version History
 ###############
 
+v1.3.3
+------
+
+* Add the **extra_commands** argument to ``BaseCsc.__init__()``.
+* Remove the **ts-idl**.
+
 v1.3.2
 ------
 
