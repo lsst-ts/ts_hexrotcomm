@@ -208,6 +208,7 @@ class CommandTelemetryClientTestCase(unittest.IsolatedAsyncioTestCase):
             async with self.make_client(mock_ctrl) as client:
                 await client.close()
                 await self.assert_next_connected(False)
+                await asyncio.sleep(STD_TIMEOUT)
                 assert not mock_ctrl.connected
 
             async with self.make_client(mock_ctrl) as client:

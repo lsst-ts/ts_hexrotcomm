@@ -6,6 +6,11 @@
 Version History
 ###############
 
+v1.3.4
+------
+
+* Fix the failed test.
+
 v1.3.3
 ------
 
