@@ -18,8 +18,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 try:
-    from .version import *
+    from .version import __version__
 except ImportError:
     __version__ = "?"
 
