@@ -7,3 +7,4 @@ mypy: true
 clang-format: false
 format-xmllint: true
 ruff: true
+towncrier: true

@@ -20,3 +20,9 @@ To enable this:
 
 * Run ``pre-commit install`` once.
 * If directed, run ``git config --unset-all core.hooksPath`` once.
+
+Version History
+===============
+
+The version history is maintained with the ``towncrier`` system.
+See  `here <doc/news/README.rst>`_ for the details.
