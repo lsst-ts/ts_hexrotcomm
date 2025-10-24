@@ -48,9 +48,7 @@ MAX_STATE_CHANGE_TELEMETRY_MESSAGES = 5
 CONFIG_TIMEOUT = 10
 
 
-def make_connect_error_info(
-    prefix: str, connected: bool, connect_descr: str
-) -> tuple[ErrorCode, str]:
+def make_connect_error_info(prefix: str, connected: bool, connect_descr: str) -> tuple[ErrorCode, str]:
     """Make an error code and error message for a connect error.
 
     Parameters
@@ -252,8 +250,7 @@ class BaseCsc(salobj.ConfigurableCsc):
         self.assert_connected()
         if not self.evt_commandableByDDS.data.state:
             raise salobj.ExpectedError(
-                "Controller has CSC commands disabled; "
-                "use the EUI to enable CSC commands"
+                "Controller has CSC commands disabled; use the EUI to enable CSC commands"
             )
 
     def assert_connected(self) -> None:
@@ -298,9 +295,7 @@ class BaseCsc(salobj.ConfigurableCsc):
                 f"instead of {substate!r}"
             )
 
-    def assert_summary_state(
-        self, state: salobj.State, isbefore: bool | None = None
-    ) -> None:
+    def assert_summary_state(self, state: salobj.State, isbefore: bool | None = None) -> None:
         """Assert that the current summary state is as specified.
 
         First check that CSC can command the low-level controller.
@@ -316,9 +311,7 @@ class BaseCsc(salobj.ConfigurableCsc):
             (which raises a deprecation warning) and None.
         """
         if isbefore:
-            raise ValueError(
-                f"isbefore={isbefore}; this deprecated argument must be None or False"
-            )
+            raise ValueError(f"isbefore={isbefore}; this deprecated argument must be None or False")
         elif isbefore is False:
             warnings.warn(f"isbefore={isbefore} is deprecated", DeprecationWarning)
         state = salobj.State(state)
@@ -537,9 +530,7 @@ class BaseCsc(salobj.ConfigurableCsc):
             assert self.client is not None
             assert self.config is not None
 
-            await asyncio.wait_for(
-                self.client.start_task, timeout=self.config.connection_timeout
-            )
+            await asyncio.wait_for(self.client.start_task, timeout=self.config.connection_timeout)
             connected = True
             # Wait for configuration and telemetry, since we cannot safely
             # issue commands until we know both.
@@ -561,9 +552,7 @@ class BaseCsc(salobj.ConfigurableCsc):
                 connected=connected,
                 connect_descr=connect_descr,
             )
-            await self.fault(
-                code=error_code, report=err_msg, traceback=traceback.format_exc()
-            )
+            await self.fault(code=error_code, report=err_msg, traceback=traceback.format_exc())
             raise
 
     async def disconnect(self) -> None:
@@ -602,9 +591,7 @@ class BaseCsc(salobj.ConfigurableCsc):
         # Workaround the mypy check
         assert self.client is not None
 
-        self.log.info(
-            f"Enable low-level controller; initial state={self.client.telemetry.state}"
-        )
+        self.log.info(f"Enable low-level controller; initial state={self.client.telemetry.state}")
 
         if self.client.telemetry.state == ControllerState.ENABLED:
             return
@@ -665,9 +652,7 @@ class BaseCsc(salobj.ConfigurableCsc):
             await self.standby_controller()
 
         except Exception as error:
-            self.log.warning(
-                f"Ignoring the error when putting the controller to STANDBY state: {error}."
-            )
+            self.log.warning(f"Ignoring the error when putting the controller to STANDBY state: {error}.")
 
     async def standby_controller(self) -> None:
         """Standby the low-level controller."""
@@ -729,9 +714,7 @@ class BaseCsc(salobj.ConfigurableCsc):
             self.log.warning(f"Disabling the CSC because {why_str}")
             data = self.cmd_disable.DataType()
             asyncio.create_task(
-                self._do_change_state(
-                    data, "disable", [salobj.State.ENABLED], salobj.State.DISABLED
-                )
+                self._do_change_state(data, "disable", [salobj.State.ENABLED], salobj.State.DISABLED)
             )
 
     @abc.abstractmethod

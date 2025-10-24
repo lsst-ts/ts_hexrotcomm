@@ -141,8 +141,7 @@ class SimpleMockController(BaseMockController):
         position = command.param1
         if position < self.config.min_position or position > self.config.max_position:
             raise CommandError(
-                f"Position {position} out of range "
-                f"[{self.config.min_position}, {self.config.max_position}]."
+                f"Position {position} out of range [{self.config.min_position}, {self.config.max_position}]."
             )
         self.telemetry.cmd_position = position
         self.telemetry.curr_position = position
@@ -150,9 +149,7 @@ class SimpleMockController(BaseMockController):
     async def update_telemetry(self, curr_tai: float) -> None:
         self.telemetry.curr_position += 0.001
 
-    async def end_run_command(
-        self, command: structs.Command, cmd_method: typing.Coroutine
-    ) -> None:
+    async def end_run_command(self, command: structs.Command, cmd_method: typing.Coroutine) -> None:
         pass
 
     async def write_config(self) -> None:
