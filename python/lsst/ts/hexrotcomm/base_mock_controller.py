@@ -188,13 +188,10 @@ class BaseMockController(tcpip.OneClientReadLoopServer, abc.ABC):
             If the state is not as expected.
         """
         if self.state != state:
-            raise CommandError(
-                f"state={self.state!r}; must be {state!r} for this command."
-            )
+            raise CommandError(f"state={self.state!r}; must be {state!r} for this command.")
         if enabled_substate is not None and self.enabled_substate != enabled_substate:
             raise CommandError(
-                f"enabled_substate={self.enabled_substate!r}; "
-                f"must be {enabled_substate!r} for this command."
+                f"enabled_substate={self.enabled_substate!r}; must be {enabled_substate!r} for this command."
             )
 
     async def do_enable_drives(self, command: structs.Command) -> None:
@@ -217,9 +214,7 @@ class BaseMockController(tcpip.OneClientReadLoopServer, abc.ABC):
             ControllerState.FAULT,
             ControllerState.STANDBY,
         ):
-            raise CommandError(
-                f"state={self.state!r}; must be FAULT or STANDBY for this command."
-            )
+            raise CommandError(f"state={self.state!r}; must be FAULT or STANDBY for this command.")
         self.set_state(ControllerState.STANDBY)
 
     async def run_command(self, command: structs.Command) -> float | None:
@@ -256,9 +251,7 @@ class BaseMockController(tcpip.OneClientReadLoopServer, abc.ABC):
         key = self.get_command_key(command)
         cmd_method = self.command_table.get(key, None)
         if cmd_method is None:
-            raise CommandError(
-                f"Unrecognized command code {command.code}; param1={command.param1}..."
-            )
+            raise CommandError(f"Unrecognized command code {command.code}; param1={command.param1}...")
             return
 
         duration = await cmd_method(command)  # type: ignore[arg-type, func-returns-value]
@@ -267,9 +260,7 @@ class BaseMockController(tcpip.OneClientReadLoopServer, abc.ABC):
         return duration
 
     @abc.abstractmethod
-    async def end_run_command(
-        self, command: structs.Command, cmd_method: typing.Coroutine
-    ) -> None:
+    async def end_run_command(self, command: structs.Command, cmd_method: typing.Coroutine) -> None:
         """Called when run_command is done.
 
         Can be used to clear the set position.
@@ -293,9 +284,7 @@ class BaseMockController(tcpip.OneClientReadLoopServer, abc.ABC):
         """
         self.telemetry.state = ControllerState(state)
         self.telemetry.enabled_substate = (
-            EnabledSubstate.STATIONARY
-            if self.telemetry.state == ControllerState.ENABLED
-            else 0
+            EnabledSubstate.STATIONARY if self.telemetry.state == ControllerState.ENABLED else 0
         )
         self.log.debug(
             f"set_state: state={ControllerState(self.telemetry.state)!r}; "
@@ -375,9 +364,7 @@ class BaseMockController(tcpip.OneClientReadLoopServer, abc.ABC):
         except Exception:
             self.log.exception("telemetry_loop failed")
 
-    def update_and_get_header(
-        self, frame_id: enums.FrameId
-    ) -> tuple[structs.Header, float]:
+    def update_and_get_header(self, frame_id: enums.FrameId) -> tuple[structs.Header, float]:
         """Update the config or telemetry header and return it and the time.
 
         Call this prior to writing configuration or telemetry.

@@ -244,9 +244,7 @@ class CommandTelemetryClient(tcpip.Client):
         await self._telemetry_task
         return self.telemetry
 
-    async def run_command(
-        self, command: structs.Command, interrupt: bool = False
-    ) -> float:
+    async def run_command(self, command: structs.Command, interrupt: bool = False) -> float:
         """Run a command and wait for acknowledgement.
 
         Parameters
@@ -279,9 +277,7 @@ class CommandTelemetryClient(tcpip.Client):
         (or the time limit is exceeded).
         """
         if not isinstance(command, structs.Command):
-            raise ValueError(
-                f"command={command!r} must be an instance of structs.Command"
-            )
+            raise ValueError(f"command={command!r} must be an instance of structs.Command")
 
         async with self._command_lock:
             # Cancel the task just to be sure; it's hard to see how it
