@@ -24,6 +24,7 @@ import unittest
 import unittest.mock
 
 import pytest
+
 from lsst.ts import hexrotcomm, salobj
 from lsst.ts.xml.enums.MTHexapod import (
     ApplicationStatus,
