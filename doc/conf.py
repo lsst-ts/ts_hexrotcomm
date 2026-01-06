@@ -4,7 +4,7 @@ This configuration only affects single-package Sphinx documentation builds.
 """
 
 import lsst.ts.hexrotcomm  # noqa
-from documenteer.conf.pipelinespkg import *  # type: ignore # noqa
+from documenteer.conf.guide import *  # type: ignore # noqa
 
 project = "ts_hexrotcomm"
 html_theme_options["logotext"] = project  # type: ignore # noqa
