@@ -25,6 +25,7 @@ import logging
 import unittest
 
 import pytest
+
 from lsst.ts import hexrotcomm, salobj, tcpip
 from lsst.ts.xml.enums.MTHexapod import ControllerState
 
