@@ -100,14 +100,10 @@ class SimpleCsc(hexrotcomm.BaseCsc):
         override: str = "",
     ) -> None:
         # Workaround the checking of "do_" commands in upstream
-        supported_command_names = [
-            name[3:] for name in dir(self) if name.startswith("do_")
-        ]
+        supported_command_names = [name[3:] for name in dir(self) if name.startswith("do_")]
 
         component_info = ComponentInfo("MTRotator", "sal")
-        topic_names = [
-            name[4:] for name in component_info.topics if name.startswith("cmd_")
-        ]
+        topic_names = [name[4:] for name in component_info.topics if name.startswith("cmd_")]
         for topic_name in topic_names:
             if topic_name not in supported_command_names:
                 setattr(self, f"do_{topic_name}", self._do_nothing)
@@ -131,19 +127,13 @@ class SimpleCsc(hexrotcomm.BaseCsc):
     async def do_move(self, data: salobj.BaseMsgType) -> None:
         """Specify a position."""
         self.assert_enabled_substate(EnabledSubstate.STATIONARY)
-        if (
-            not self.client.config.min_position
-            <= data.position
-            <= self.client.config.max_position
-        ):
+        if not self.client.config.min_position <= data.position <= self.client.config.max_position:
             raise salobj.ExpectedError(
                 f"position {data.position} not in range "
                 f"[{self.client.config.min_position}, "
                 f"{self.client.config.max_position}]"
             )
-        await self.run_command(
-            code=simple_mock_controller.SimpleCommandCode.MOVE, param1=data.position
-        )
+        await self.run_command(code=simple_mock_controller.SimpleCommandCode.MOVE, param1=data.position)
 
     async def config_callback(self, client: CommandTelemetryClient) -> None:
         """Called when the TCP/IP controller outputs configuration.
@@ -181,10 +171,7 @@ class SimpleCsc(hexrotcomm.BaseCsc):
             enabledSubstate=int(client.telemetry.enabled_substate),
         )
         await self.evt_commandableByDDS.set_write(
-            state=bool(
-                client.telemetry.application_status
-                & ApplicationStatus.DDS_COMMAND_SOURCE
-            )
+            state=bool(client.telemetry.application_status & ApplicationStatus.DDS_COMMAND_SOURCE)
         )
 
         await self.tel_rotation.set_write(

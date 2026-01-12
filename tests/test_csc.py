@@ -24,6 +24,7 @@ import unittest
 import unittest.mock
 
 import pytest
+
 from lsst.ts import hexrotcomm, salobj
 from lsst.ts.xml.enums.MTHexapod import (
     ApplicationStatus,
@@ -103,9 +104,7 @@ class TestSimpleCsc(hexrotcomm.BaseCscTestCase, unittest.IsolatedAsyncioTestCase
                     assert self.csc.summary_state == salobj.State.STANDBY
 
             # Now try a valid config
-            await self.remote.cmd_start.set_start(
-                configurationOverride="", timeout=STD_TIMEOUT
-            )
+            await self.remote.cmd_start.set_start(configurationOverride="", timeout=STD_TIMEOUT)
             assert self.csc.summary_state == salobj.State.DISABLED
 
     async def test_controller_fault(self) -> None:
@@ -159,10 +158,9 @@ class TestSimpleCsc(hexrotcomm.BaseCscTestCase, unittest.IsolatedAsyncioTestCase
 
     async def test_no_config(self) -> None:
         short_config_timeout = 1
-        with unittest.mock.patch(
-            "lsst.ts.hexrotcomm.base_csc.CONFIG_TIMEOUT", short_config_timeout
-        ), unittest.mock.patch(
-            "lsst.ts.hexrotcomm.simple_mock_controller.ENABLE_CONFIG", False
+        with (
+            unittest.mock.patch("lsst.ts.hexrotcomm.base_csc.CONFIG_TIMEOUT", short_config_timeout),
+            unittest.mock.patch("lsst.ts.hexrotcomm.simple_mock_controller.ENABLE_CONFIG", False),
         ):
             async with self.make_csc(
                 initial_state=salobj.State.STANDBY,
@@ -170,14 +168,10 @@ class TestSimpleCsc(hexrotcomm.BaseCscTestCase, unittest.IsolatedAsyncioTestCase
                 config_dir=TEST_CONFIG_DIR,
             ):
                 await self.assert_next_summary_state(salobj.State.STANDBY)
-                await self.assert_next_sample(
-                    topic=self.remote.evt_errorCode, errorCode=0
-                )
+                await self.assert_next_sample(topic=self.remote.evt_errorCode, errorCode=0)
 
                 with salobj.assertRaisesAckError(ack=salobj.SalRetCode.CMD_FAILED):
-                    await self.remote.cmd_start.start(
-                        timeout=STD_TIMEOUT + short_config_timeout
-                    )
+                    await self.remote.cmd_start.start(timeout=STD_TIMEOUT + short_config_timeout)
                 await self.assert_next_summary_state(salobj.State.FAULT)
                 data = await self.assert_next_sample(
                     topic=self.remote.evt_errorCode,
@@ -235,18 +229,14 @@ class TestSimpleCsc(hexrotcomm.BaseCscTestCase, unittest.IsolatedAsyncioTestCase
             )
 
             # Clear the DDS_COMMAND_SOURCE flag
-            self.csc.mock_ctrl.telemetry.application_status &= (
-                ~ApplicationStatus.DDS_COMMAND_SOURCE
-            )
+            self.csc.mock_ctrl.telemetry.application_status &= ~ApplicationStatus.DDS_COMMAND_SOURCE
             await self.assert_next_sample(
                 topic=self.remote.evt_commandableByDDS,
                 state=False,
             )
             await self.assert_next_summary_state(salobj.State.DISABLED)
 
-    async def move_sequentially(
-        self, *positions: list[float], delay: float | None = None
-    ) -> None:
+    async def move_sequentially(self, *positions: list[float], delay: float | None = None) -> None:
         """Move sequentially to different positions, in order to test
         `BaseCsc.run_multiple_commands`.
 
@@ -263,9 +253,7 @@ class TestSimpleCsc(hexrotcomm.BaseCscTestCase, unittest.IsolatedAsyncioTestCase
         """
         commands = []
         for position in positions:
-            command = self.csc.make_command(
-                code=hexrotcomm.SimpleCommandCode.MOVE, param1=position
-            )
+            command = self.csc.make_command(code=hexrotcomm.SimpleCommandCode.MOVE, param1=position)
             commands.append(command)
         await self.csc.run_multiple_commands(*commands, delay=delay)
 
@@ -284,9 +272,7 @@ class TestSimpleCsc(hexrotcomm.BaseCscTestCase, unittest.IsolatedAsyncioTestCase
             )
             data = await self.remote.tel_rotation.next(flush=True, timeout=STD_TIMEOUT)
             assert data.demandPosition == pytest.approx(0)
-            await self.remote.cmd_move.set_start(
-                position=destination, timeout=STD_TIMEOUT
-            )
+            await self.remote.cmd_move.set_start(position=destination, timeout=STD_TIMEOUT)
             data = await self.remote.tel_rotation.next(flush=True, timeout=STD_TIMEOUT)
             assert data.demandPosition == pytest.approx(destination)
 

@@ -25,6 +25,7 @@ import logging
 import unittest
 
 import pytest
+
 from lsst.ts import hexrotcomm, salobj, tcpip
 from lsst.ts.xml.enums.MTHexapod import ControllerState
 
@@ -117,32 +118,22 @@ class CommandTelemetryClientTestCase(unittest.IsolatedAsyncioTestCase):
         finally:
             await client.close()
 
-    async def client_connect_callback(
-        self, server: tcpip.OneClientReadLoopServer
-    ) -> None:
+    async def client_connect_callback(self, server: tcpip.OneClientReadLoopServer) -> None:
         self.client_connect_queue.put_nowait(server.connected)
         if self.callbacks_raise:
-            raise RuntimeError(
-                "connect_callback raising because self.callbacks_raise is true"
-            )
+            raise RuntimeError("connect_callback raising because self.callbacks_raise is true")
 
     async def config_callback(self, server: tcpip.OneClientReadLoopServer) -> None:
         self.config_list.append(server.config)
         if self.callbacks_raise:
-            raise RuntimeError(
-                "config_callback raising because self.callbacks_raise is true"
-            )
+            raise RuntimeError("config_callback raising because self.callbacks_raise is true")
 
     async def telemetry_callback(self, server: tcpip.OneClientReadLoopServer) -> None:
         self.telemetry_list.append(server.telemetry)
         if self.callbacks_raise:
-            raise RuntimeError(
-                "telemetry_callback raising because self.callbacks_raise is true"
-            )
+            raise RuntimeError("telemetry_callback raising because self.callbacks_raise is true")
 
-    async def assert_next_connected(
-        self, connected: bool, timeout: float = STD_TIMEOUT
-    ) -> None:
+    async def assert_next_connected(self, connected: bool, timeout: float = STD_TIMEOUT) -> None:
         """Assert results of next connect_callback.
 
         Parameters
@@ -152,9 +143,7 @@ class CommandTelemetryClientTestCase(unittest.IsolatedAsyncioTestCase):
         timeout : `float`
             Time to wait for connect_callback (seconds).
         """
-        is_connected = await asyncio.wait_for(
-            self.client_connect_queue.get(), timeout=timeout
-        )
+        is_connected = await asyncio.wait_for(self.client_connect_queue.get(), timeout=timeout)
         assert connected == is_connected
 
     async def test_constructor_errors(self) -> None:
@@ -192,9 +181,7 @@ class CommandTelemetryClientTestCase(unittest.IsolatedAsyncioTestCase):
                 assert config.min_position == self.initial_min_position
                 assert config.max_position == self.initial_max_position
                 assert config.drives_enabled is False
-                telemetry = await asyncio.wait_for(
-                    client.next_telemetry(), timeout=STD_TIMEOUT
-                )
+                telemetry = await asyncio.wait_for(client.next_telemetry(), timeout=STD_TIMEOUT)
                 assert telemetry.cmd_position == self.initial_cmd_position
                 assert telemetry.curr_position >= self.initial_cmd_position
 
@@ -215,9 +202,7 @@ class CommandTelemetryClientTestCase(unittest.IsolatedAsyncioTestCase):
                 assert mock_ctrl.connected
 
     async def test_move_command(self) -> None:
-        async with self.make_mock_controller() as mock_ctrl, self.make_client(
-            mock_ctrl
-        ) as client:
+        async with self.make_mock_controller() as mock_ctrl, self.make_client(mock_ctrl) as client:
             await asyncio.wait_for(client.configured_task, timeout=STD_TIMEOUT)
             config = client.config
             assert config.min_position == self.initial_min_position
@@ -262,9 +247,7 @@ class CommandTelemetryClientTestCase(unittest.IsolatedAsyncioTestCase):
         """Test that sending a header with an unknown frame ID causes
         the server to flush the rest of the message and continue.
         """
-        async with self.make_mock_controller() as mock_ctrl, self.make_client(
-            mock_ctrl
-        ):
+        async with self.make_mock_controller() as mock_ctrl, self.make_client(mock_ctrl):
             # Stop the telemetry loop and clear telemetry_list
             mock_ctrl.telemetry_loop_task.cancel()
             # give the task time to finish; probably not needed
@@ -313,9 +296,7 @@ class CommandTelemetryClientTestCase(unittest.IsolatedAsyncioTestCase):
 
     async def test_run_command_errors(self) -> None:
         """Test expected failures in BaseMockController.run_command."""
-        async with self.make_mock_controller() as mock_ctrl, self.make_client(
-            mock_ctrl
-        ) as client:
+        async with self.make_mock_controller() as mock_ctrl, self.make_client(mock_ctrl) as client:
             assert client.connected
 
             command = hexrotcomm.Command()
@@ -340,9 +321,7 @@ class CommandTelemetryClientTestCase(unittest.IsolatedAsyncioTestCase):
         that raise an exception.
         """
         self.callbacks_raise = True
-        async with self.make_mock_controller() as mock_ctrl, self.make_client(
-            mock_ctrl
-        ) as client:
+        async with self.make_mock_controller() as mock_ctrl, self.make_client(mock_ctrl) as client:
             with pytest.raises(RuntimeError):
                 await asyncio.wait_for(client.configured_task, timeout=STD_TIMEOUT)
             config = client.config
@@ -355,9 +334,10 @@ class CommandTelemetryClientTestCase(unittest.IsolatedAsyncioTestCase):
 
     async def test_truncate_command_status_reason(self) -> None:
         """Test that a too-long command status reason is truncated."""
-        async with self.make_mock_controller() as mock_ctrl, tcpip.Client(
-            host=mock_ctrl.host, port=mock_ctrl.port, log=mock_ctrl.log
-        ) as client:
+        async with (
+            self.make_mock_controller() as mock_ctrl,
+            tcpip.Client(host=mock_ctrl.host, port=mock_ctrl.port, log=mock_ctrl.log) as client,
+        ):
             await asyncio.wait_for(mock_ctrl.connected_task, timeout=STD_TIMEOUT)
             reason_len = hexrotcomm.CommandStatus.reason.size
             assert reason_len > 0
