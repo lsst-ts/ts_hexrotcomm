@@ -672,6 +672,15 @@ class BaseCsc(salobj.ConfigurableCsc):
             Sleep time in second. (the default is 1.0)
         """
 
+        if not self._controller_state_lock.locked():
+            self.log.error(
+                "Attempting to enable drives without acquiring controller state lock! "
+                "This might lead to a race condition with other drive-related operations. "
+                "If you are trying to enable the drives from a stand-alone method, "
+                "make sure the lock is acquired. "
+                "Continuing..."
+            )
+
         await self.run_command(
             code=self.CommandCode.ENABLE_DRIVES,  # type: ignore[attr-defined]
             param1=float(status),
