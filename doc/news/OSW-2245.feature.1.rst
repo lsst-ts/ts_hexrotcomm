@@ -1,0 +1,1 @@
+Introduced the 'wait_driver_state' method to provide a deterministic way to wait for driver state transitions.
