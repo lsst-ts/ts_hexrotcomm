@@ -676,6 +676,8 @@ class BaseCsc(salobj.ConfigurableCsc):
             code=self.CommandCode.ENABLE_DRIVES,  # type: ignore[attr-defined]
             param1=float(status),
         )
+
+        await self.wait_driver_state(status)
         await asyncio.sleep(time)
 
     async def begin_standby(self, data: salobj.BaseMsgType) -> None:
