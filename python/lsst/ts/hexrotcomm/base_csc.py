@@ -691,7 +691,8 @@ class BaseCsc(salobj.ConfigurableCsc):
 
     async def begin_standby(self, data: salobj.BaseMsgType) -> None:
         try:
-            await self._enable_drives(False)
+            async with self._controller_state_lock:
+                await self._enable_drives(False)
         except Exception as error:
             self.log.warning(f"Ignoring the error when disabling the drives: {error}.")
 
