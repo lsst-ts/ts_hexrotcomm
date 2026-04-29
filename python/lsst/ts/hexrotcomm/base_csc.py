@@ -321,6 +321,38 @@ class BaseCsc(salobj.ConfigurableCsc):
                 f"Rejected: initial state is {self.summary_state!r} instead of {state!r}"
             )
 
+    async def wait_driver_state(
+        self, enabled: bool, max_telem: int = MAX_STATE_CHANGE_TELEMETRY_MESSAGES
+    ) -> None:
+        """Wait for the driver state to be as specified.
+
+        Fails if the CSC cannot read the driver state from telemetry.
+
+        Parameters
+        ----------
+        enabled : `bool`
+            Desired driver state (True = enabled, False = disabled).
+        max_telem : `int`
+            Maximum number of low-level telemetry messages to wait for.
+
+        Raises
+        ------
+        lsst.ts.salobj.ExpectedError
+            If the driver state does not become the desired state within
+            ``max_telem`` telemetry messages.
+        """
+        # Workaround the mypy check
+        assert self.client is not None
+
+        for i in range(max_telem):
+            self.assert_connected()
+            await self.client.next_telemetry()
+            if self.client.config.drives_enabled == enabled:
+                return
+        current_state = "disabled" if enabled else "enabled"
+        expected_state = "enabled" if enabled else "disabled"
+        raise salobj.ExpectedError(f"Failed: drives {current_state} instead of {expected_state}.")
+
     async def wait_controller_state(
         self, state: IntEnum, max_telem: int = MAX_STATE_CHANGE_TELEMETRY_MESSAGES
     ) -> None:
