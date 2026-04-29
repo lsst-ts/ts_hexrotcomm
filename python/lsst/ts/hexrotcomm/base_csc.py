@@ -181,6 +181,9 @@ class BaseCsc(salobj.ConfigurableCsc):
         # To avoid deadlocks: if acquiring both _command_lock and write_lock
         # then always acquire _command_lock first.
         self._command_lock = asyncio.Lock()
+
+        self._controller_state_lock = asyncio.Lock()
+
         super().__init__(
             name=name,
             index=index,
@@ -618,43 +621,45 @@ class BaseCsc(salobj.ConfigurableCsc):
             cannot be cleared. Or if a state transition command fails
             (which is unlikely).
         """
-        self.assert_commandable()
+        async with self._controller_state_lock:
+            self.assert_commandable()
 
-        # Workaround the mypy check
-        assert self.client is not None
+            # Workaround the mypy check
+            assert self.client is not None
 
-        self.log.info(f"Enable low-level controller; initial state={self.client.telemetry.state}")
+            self.log.info(f"Enable low-level controller; initial state={self.client.telemetry.state}")
 
-        if self.client.telemetry.state == ControllerState.ENABLED:
-            return
+            if self.client.telemetry.state == ControllerState.ENABLED:
+                return
 
-        if self.client.telemetry.state == ControllerState.FAULT:
-            # Start by issuing the clearError command.
-            self.log.info("Clearing low-level controller fault state")
-            await self.run_command(
-                code=self.CommandCode.SET_STATE,  # type: ignore[attr-defined]
-                param1=SetStateParam.CLEAR_ERROR,
-            )
+            if self.client.telemetry.state == ControllerState.FAULT:
+                # Start by issuing the clearError command.
+                self.log.info("Clearing low-level controller fault state")
+                await self.run_command(
+                    code=self.CommandCode.SET_STATE,  # type: ignore[attr-defined]
+                    param1=SetStateParam.CLEAR_ERROR,
+                )
 
-        if self.client.telemetry.state != ControllerState.STANDBY:
-            raise salobj.ExpectedError(
-                f"Before enable: low-level controller state={self.client.telemetry.state}; "
-                f"expected {ControllerState.STANDBY!r}"
-            )
+            if self.client.telemetry.state != ControllerState.STANDBY:
+                raise salobj.ExpectedError(
+                    f"Before enable: low-level controller state={self.client.telemetry.state}; "
+                    f"expected {ControllerState.STANDBY!r}"
+                )
 
-        # Enable the drives first
-        await self._enable_drives(True)
+            # Enable the drives first
+            await self._enable_drives(True)
 
-        try:
-            await self.run_command(
-                code=self.CommandCode.SET_STATE,  # type: ignore[attr-defined]
-                param1=SetStateParam.ENABLE,
-            )
-        except Exception as e:
-            print(f"Low-level controller enable failed: {e!r}")
-            raise
+            try:
+                await self.run_command(
+                    code=self.CommandCode.SET_STATE,  # type: ignore[attr-defined]
+                    param1=SetStateParam.ENABLE,
+                )
+            except Exception as e:
+                print(f"Low-level controller enable failed: {e!r}")
+                raise
 
-        await self.wait_controller_state(ControllerState.ENABLED)
+            await self.wait_controller_state(ControllerState.ENABLED)
+        self.log.info("Controller enabled.")
 
     async def _enable_drives(self, status: bool, time: float = 1.0) -> None:
         """Enable the drives.
@@ -689,13 +694,19 @@ class BaseCsc(salobj.ConfigurableCsc):
     async def standby_controller(self) -> None:
         """Standby the low-level controller."""
 
-        self.assert_commandable()
+        async with self._controller_state_lock:
+            self.assert_commandable()
 
-        await self.run_command(
-            code=self.CommandCode.SET_STATE,  # type: ignore[attr-defined]
-            param1=SetStateParam.STANDBY,
-        )
-        await self._enable_drives(False)
+            await self.run_command(
+                code=self.CommandCode.SET_STATE,  # type: ignore[attr-defined]
+                param1=SetStateParam.STANDBY,
+            )
+
+            await self.wait_controller_state(ControllerState.STANDBY)
+
+            await self._enable_drives(False)
+
+        self.log.debug("Controller in Standby.")
 
     @abc.abstractmethod
     async def config_callback(self, client: CommandTelemetryClient) -> None:
