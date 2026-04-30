@@ -1,1 +1,0 @@
-Added error logging in '_enable_drives' for cases where the controller state lock cannot be acquired.
