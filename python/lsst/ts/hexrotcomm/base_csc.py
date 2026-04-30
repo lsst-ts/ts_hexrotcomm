@@ -181,6 +181,9 @@ class BaseCsc(salobj.ConfigurableCsc):
         # To avoid deadlocks: if acquiring both _command_lock and write_lock
         # then always acquire _command_lock first.
         self._command_lock = asyncio.Lock()
+
+        self._controller_state_lock = asyncio.Lock()
+
         super().__init__(
             name=name,
             index=index,
@@ -320,6 +323,38 @@ class BaseCsc(salobj.ConfigurableCsc):
             raise salobj.ExpectedError(
                 f"Rejected: initial state is {self.summary_state!r} instead of {state!r}"
             )
+
+    async def wait_driver_state(
+        self, enabled: bool, max_telem: int = MAX_STATE_CHANGE_TELEMETRY_MESSAGES
+    ) -> None:
+        """Wait for the driver state to be as specified.
+
+        Fails if the CSC cannot read the driver state from telemetry.
+
+        Parameters
+        ----------
+        enabled : `bool`
+            Desired driver state (True = enabled, False = disabled).
+        max_telem : `int`
+            Maximum number of low-level telemetry messages to wait for.
+
+        Raises
+        ------
+        lsst.ts.salobj.ExpectedError
+            If the driver state does not become the desired state within
+            ``max_telem`` telemetry messages.
+        """
+        # Workaround the mypy check
+        assert self.client is not None
+
+        for i in range(max_telem):
+            self.assert_connected()
+            await self.client.next_telemetry()
+            if self.client.config.drives_enabled == enabled:
+                return
+        current_state = "disabled" if enabled else "enabled"
+        expected_state = "enabled" if enabled else "disabled"
+        raise salobj.ExpectedError(f"Failed: drives {current_state} instead of {expected_state}.")
 
     async def wait_controller_state(
         self, state: IntEnum, max_telem: int = MAX_STATE_CHANGE_TELEMETRY_MESSAGES
@@ -586,43 +621,45 @@ class BaseCsc(salobj.ConfigurableCsc):
             cannot be cleared. Or if a state transition command fails
             (which is unlikely).
         """
-        self.assert_commandable()
+        async with self._controller_state_lock:
+            self.assert_commandable()
 
-        # Workaround the mypy check
-        assert self.client is not None
+            # Workaround the mypy check
+            assert self.client is not None
 
-        self.log.info(f"Enable low-level controller; initial state={self.client.telemetry.state}")
+            self.log.info(f"Enable low-level controller; initial state={self.client.telemetry.state}")
 
-        if self.client.telemetry.state == ControllerState.ENABLED:
-            return
+            if self.client.telemetry.state == ControllerState.ENABLED:
+                return
 
-        if self.client.telemetry.state == ControllerState.FAULT:
-            # Start by issuing the clearError command.
-            self.log.info("Clearing low-level controller fault state")
-            await self.run_command(
-                code=self.CommandCode.SET_STATE,  # type: ignore[attr-defined]
-                param1=SetStateParam.CLEAR_ERROR,
-            )
+            if self.client.telemetry.state == ControllerState.FAULT:
+                # Start by issuing the clearError command.
+                self.log.info("Clearing low-level controller fault state")
+                await self.run_command(
+                    code=self.CommandCode.SET_STATE,  # type: ignore[attr-defined]
+                    param1=SetStateParam.CLEAR_ERROR,
+                )
 
-        if self.client.telemetry.state != ControllerState.STANDBY:
-            raise salobj.ExpectedError(
-                f"Before enable: low-level controller state={self.client.telemetry.state}; "
-                f"expected {ControllerState.STANDBY!r}"
-            )
+            if self.client.telemetry.state != ControllerState.STANDBY:
+                raise salobj.ExpectedError(
+                    f"Before enable: low-level controller state={self.client.telemetry.state}; "
+                    f"expected {ControllerState.STANDBY!r}"
+                )
 
-        # Enable the drives first
-        await self._enable_drives(True)
+            # Enable the drives first
+            await self._enable_drives(True)
 
-        try:
-            await self.run_command(
-                code=self.CommandCode.SET_STATE,  # type: ignore[attr-defined]
-                param1=SetStateParam.ENABLE,
-            )
-        except Exception as e:
-            print(f"Low-level controller enable failed: {e!r}")
-            raise
+            try:
+                await self.run_command(
+                    code=self.CommandCode.SET_STATE,  # type: ignore[attr-defined]
+                    param1=SetStateParam.ENABLE,
+                )
+            except Exception as e:
+                print(f"Low-level controller enable failed: {e!r}")
+                raise
 
-        await self.wait_controller_state(ControllerState.ENABLED)
+            await self.wait_controller_state(ControllerState.ENABLED)
+        self.log.info("Controller enabled.")
 
     async def _enable_drives(self, status: bool, time: float = 1.0) -> None:
         """Enable the drives.
@@ -635,15 +672,27 @@ class BaseCsc(salobj.ConfigurableCsc):
             Sleep time in second. (the default is 1.0)
         """
 
+        if not self._controller_state_lock.locked():
+            self.log.error(
+                "Attempting to enable drives without acquiring controller state lock! "
+                "This might lead to a race condition with other drive-related operations. "
+                "If you are trying to enable the drives from a stand-alone method, "
+                "make sure the lock is acquired. "
+                "Continuing..."
+            )
+
         await self.run_command(
             code=self.CommandCode.ENABLE_DRIVES,  # type: ignore[attr-defined]
             param1=float(status),
         )
+
+        await self.wait_driver_state(status)
         await asyncio.sleep(time)
 
     async def begin_standby(self, data: salobj.BaseMsgType) -> None:
         try:
-            await self._enable_drives(False)
+            async with self._controller_state_lock:
+                await self._enable_drives(False)
         except Exception as error:
             self.log.warning(f"Ignoring the error when disabling the drives: {error}.")
 
@@ -657,13 +706,19 @@ class BaseCsc(salobj.ConfigurableCsc):
     async def standby_controller(self) -> None:
         """Standby the low-level controller."""
 
-        self.assert_commandable()
+        async with self._controller_state_lock:
+            self.assert_commandable()
 
-        await self.run_command(
-            code=self.CommandCode.SET_STATE,  # type: ignore[attr-defined]
-            param1=SetStateParam.STANDBY,
-        )
-        await self._enable_drives(False)
+            await self.run_command(
+                code=self.CommandCode.SET_STATE,  # type: ignore[attr-defined]
+                param1=SetStateParam.STANDBY,
+            )
+
+            await self.wait_controller_state(ControllerState.STANDBY)
+
+            await self._enable_drives(False)
+
+        self.log.debug("Controller in Standby.")
 
     @abc.abstractmethod
     async def config_callback(self, client: CommandTelemetryClient) -> None:

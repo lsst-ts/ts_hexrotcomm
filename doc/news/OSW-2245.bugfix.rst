@@ -1,0 +1,1 @@
+Updated 'begin_standby' to properly acquire the controller state lock, ensuring safety when manipulating drive states.
