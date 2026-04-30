@@ -8,6 +8,24 @@ Version History
 
 .. towncrier release notes start
 
+v1.3.8 (2026-04-30)
+===================
+
+New Features
+------------
+
+- Introduced the 'wait_driver_state' method to provide a deterministic way to wait for driver state transitions. (`OSW-2245 <https://rubinobs.atlassian.net//browse/OSW-2245>`_)
+- Updated '_enable_drives' to replace static sleep calls with the new 'wait_driver_state' logic for improved reliability. (`OSW-2245 <https://rubinobs.atlassian.net//browse/OSW-2245>`_)
+- Implemented a controller state lock in 'base_csc.py' to prevent concurrent enable and standby operations. (`OSW-2245 <https://rubinobs.atlassian.net//browse/OSW-2245>`_)
+
+
+Bug Fixes
+---------
+
+- Added error logging in '_enable_drives' for cases where the controller state lock cannot be acquired. (`OSW-2245 <https://rubinobs.atlassian.net//browse/OSW-2245>`_)
+- Updated 'begin_standby' to properly acquire the controller state lock, ensuring safety when manipulating drive states. (`OSW-2245 <https://rubinobs.atlassian.net//browse/OSW-2245>`_)
+
+
 v1.3.7 (2026-01-09)
 ===================
 
