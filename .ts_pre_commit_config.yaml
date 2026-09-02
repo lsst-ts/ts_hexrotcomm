@@ -8,3 +8,4 @@ clang-format: false
 format-xmllint: true
 ruff: true
 towncrier: true
+insert-license: true
