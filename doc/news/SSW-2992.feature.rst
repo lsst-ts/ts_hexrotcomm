@@ -1,0 +1,1 @@
+Add the local_scheme="no-local-version" to the setup.py.
